@@ -475,7 +475,7 @@ const TRANSLATIONS = {
     kpi_avgpts:'Avg Points / Operation', kpi_avgpts_sub:'across both teams',
     pts_per_op:'Points Per Operation', pts_per_op_sub:'team 1 vs team 2',
     top5:'Top 5 Operatives', top5_sub:'by total points',
-    total_participants:'Total Participants', total_participants_sub:'combined roster size, team 1 + team 2, per operation',
+    total_participants:'Total Participants', total_participants_sub:'confirmed participation, both teams combined, per operation',
     op_leaderboard:'Operative Leaderboard', search_nick:'SEARCH NICK…', all_teams:'ALL TEAMS',
     min_1_op:'MIN. 1 OPERATION', min_2_ops:'MIN. 2 OPERATIONS', min_3_ops:'MIN. 3 OPERATIONS', min_5_ops:'MIN. 5 OPERATIONS',
     th_nick:'Nick', th_ops:'Ops', th_totalpts:'Total Pts', th_avgpts:'Avg Pts', th_attend:'Attend %', th_teamsplit:'Team Split',
@@ -516,7 +516,7 @@ const TRANSLATIONS = {
     kpi_avgpts:'Ø Punkte / Einsatz', kpi_avgpts_sub:'beide Teams zusammen',
     pts_per_op:'Punkte pro Einsatz', pts_per_op_sub:'Team 1 vs. Team 2',
     top5:'Top 5 Operative', top5_sub:'nach Gesamtpunkten',
-    total_participants:'Teilnehmer gesamt', total_participants_sub:'kombinierte Teilnehmerzahl, Team 1 + Team 2, pro Einsatz',
+    total_participants:'Teilnehmer gesamt', total_participants_sub:'bestätigte Teilnahme, beide Teams zusammen, pro Einsatz',
     op_leaderboard:'Operative-Bestenliste', search_nick:'NICK SUCHEN…', all_teams:'ALLE TEAMS',
     min_1_op:'MIND. 1 EINSATZ', min_2_ops:'MIND. 2 EINSÄTZE', min_3_ops:'MIND. 3 EINSÄTZE', min_5_ops:'MIND. 5 EINSÄTZE',
     th_nick:'Nick', th_ops:'Einsätze', th_totalpts:'Punkte ges.', th_avgpts:'Ø Punkte', th_attend:'Teiln. %', th_teamsplit:'Team-Verteilung',
@@ -585,7 +585,7 @@ const eventSummaries = EVENTS.map(e=>{
     if(p.points){ if(p.team==='team 1'){t1+=p.points;t1n++;} else {t2+=p.points;t2n++;} }
     if(p.participation!==null){ partTot++; if(p.participation) partYes++; }
   });
-  return {date:e.date, time:e.time, t1, t2, count:e.players.length, partRate: partTot? partYes/partTot:0, totalPts: t1+t2};
+  return {date:e.date, time:e.time, t1, t2, count:e.players.length, participants:partYes, partRate: partTot? partYes/partTot:0, totalPts: t1+t2};
 });
 
 const playerMap = {}; // nick -> {events:[{date,points,place,team,participation,guild}], guildsSeen:Set}
@@ -704,7 +704,7 @@ function renderOverview(){
     data:{
       labels: eventSummaries.map(e=>fmtDate(e.date)),
       datasets:[{
-        label:'Participants', data:eventSummaries.map(e=>e.count),
+        label:'Participants', data:eventSummaries.map(e=>e.participants),
         borderColor:COLORS.teal, backgroundColor:'rgba(63,214,196,0.12)', fill:true, tension:.3, pointRadius:3, pointBackgroundColor:COLORS.teal
       }]
     },
