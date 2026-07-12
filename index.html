@@ -386,6 +386,11 @@
     <div class="grid-1">
       <div class="panel">
         <div class="panel-title"><span data-i18n="standings_title">Rival Guild History</span> <small data-i18n="standings_sub">placements 1-4 per operation, both teams combined</small></div>
+        <div class="controls">
+          <input type="text" id="standings-search" placeholder="SEARCH GUILD…" data-i18n-placeholder="search_guild">
+          <div class="spacer"></div>
+          <div class="count" id="standings-visible-count"></div>
+        </div>
         <div class="table-scroll" id="standings-combined" style="max-height:640px;"></div>
       </div>
     </div>
@@ -481,7 +486,7 @@ const TRANSLATIONS = {
     th_nick:'Nick', th_ops:'Ops', th_totalpts:'Total Pts', th_avgpts:'Avg Pts', th_attend:'Attend %', th_teamsplit:'Team Split',
     points_trend:'Points Trend', points_trend_sub:'toggle operatives below',
     team_totals:'Team Totals Over Time', reliability_over_time:'Reliability Over Time',
-    standings_title:'Rival Guild History', standings_sub:'placements 1-4 per operation, both teams combined',
+    standings_title:'Rival Guild History', standings_sub:'placements 1-4 per operation, both teams combined', search_guild:'SEARCH GUILD…',
     squad_reliability:'Squad Reliability', showed_signedup:'showed / signed up',
     total_noshows:'Total No-Shows', signedup_didntshow:"signed up, didn't show",
     total_standins:'Total Stand-Ins', notsignedup_showed:'not signed up, showed anyway',
@@ -498,6 +503,7 @@ const TRANSLATIONS = {
     kpi_totalpoints_sub:(n)=>`across ${n} operations`,
     kpi_operatives_sub:(avg)=>`avg ${avg} per operation`,
     rank_visible:(a,b)=>`${a} / ${b} OPERATIVES`,
+    guild_visible:(a,b)=>`${a} / ${b} GUILDS`,
     rel_visible:(a,b)=>`${a} / ${b} operatives`,
     signed_label:'Signed', noshow_label:'No-show', standin_label:'Stand-in',
     no_operatives_match:'No operatives match these filters.',
@@ -522,7 +528,7 @@ const TRANSLATIONS = {
     th_nick:'Nick', th_ops:'Einsätze', th_totalpts:'Punkte ges.', th_avgpts:'Ø Punkte', th_attend:'Teiln. %', th_teamsplit:'Team-Verteilung',
     points_trend:'Punkteverlauf', points_trend_sub:'Operative unten ein-/ausblenden',
     team_totals:'Team-Gesamtpunkte im Verlauf', reliability_over_time:'Zuverlässigkeit im Verlauf',
-    standings_title:'Verlauf gegnerischer Gilden', standings_sub:'Platzierungen 1-4 pro Einsatz, beide Teams zusammen',
+    standings_title:'Verlauf gegnerischer Gilden', standings_sub:'Platzierungen 1-4 pro Einsatz, beide Teams zusammen', search_guild:'GILDE SUCHEN…',
     squad_reliability:'Trupp-Zuverlässigkeit', showed_signedup:'erschienen / angemeldet',
     total_noshows:'No-Shows gesamt', signedup_didntshow:'angemeldet, nicht erschienen',
     total_standins:'Einspringer gesamt', notsignedup_showed:'nicht angemeldet, trotzdem erschienen',
@@ -539,6 +545,7 @@ const TRANSLATIONS = {
     kpi_totalpoints_sub:(n)=>`über ${n} Einsätze`,
     kpi_operatives_sub:(avg)=>`Ø ${avg} pro Einsatz`,
     rank_visible:(a,b)=>`${a} / ${b} OPERATIVE`,
+    guild_visible:(a,b)=>`${a} / ${b} GILDEN`,
     rel_visible:(a,b)=>`${a} / ${b} Operative`,
     signed_label:'Angemeldet', noshow_label:'No-Show', standin_label:'Einspringer',
     no_operatives_match:'Keine Operative entsprechen diesen Filtern.',
@@ -968,7 +975,8 @@ function buildGuildHistoryCombined(){
 }
 function renderGuildStandings(){
   const hist = buildGuildHistoryCombined();
-  const guilds = Object.keys(hist).map(g=>{
+  const search = document.getElementById('standings-search').value.trim().toLowerCase();
+  const allGuilds = Object.keys(hist).map(g=>{
     const allEntries = Object.values(hist[g]).flat();
     const ranked = allEntries.filter(v=>v.place>0);
     const noshows = allEntries.filter(v=>v.place===0).length;
@@ -979,10 +987,12 @@ function renderGuildStandings(){
     if(b.guild==='UFP') return 1;
     return a.guild.localeCompare(b.guild);
   });
+  const guilds = search ? allGuilds.filter(g=>g.guild.toLowerCase().includes(search)) : allGuilds;
+  document.getElementById('standings-visible-count').textContent = t('guild_visible')(guilds.length, allGuilds.length);
 
   const cols = EVENTS.map(e=>e.date);
   const head = `<tr><th class="guild-col" style="position:sticky; left:0; top:0; z-index:3;">${t('th_guild')}</th>${cols.map(d=>`<th>${fmtDate(d)}</th>`).join('')}<th>${t('th_ops2')}</th><th>${t('th_noshows')}</th><th>${t('th_avgplace')}</th></tr>`;
-  const body = guilds.map(g=>{
+  const body = guilds.length ? guilds.map(g=>{
     const cells = cols.map(d=>{
       const list = g.entries[d];
       if(list===undefined) return `<td><span class="place-cell pnone">—</span></td>`;
@@ -995,9 +1005,12 @@ function renderGuildStandings(){
       return `<td><div class="place-multi">${blocks.join('<span class="place-sep">·</span>')}</div></td>`;
     }).join('');
     return `<tr class="guild-row ${g.guild==='UFP'?'ufp':''}"><td class="guild-col">${g.guild}</td>${cells}<td class="standings-stat">${g.count}</td><td class="standings-stat" style="${g.noshows?'color:var(--red);':''}">${g.noshows}</td><td class="standings-stat">${g.avg!==null?g.avg.toFixed(1):'—'}</td></tr>`;
-  }).join('');
-  document.getElementById('standings-combined').innerHTML = `<table class="standings-table">${head}${body}</table>`;
+  }).join('') : '';
+  document.getElementById('standings-combined').innerHTML = guilds.length
+    ? `<table class="standings-table">${head}${body}</table>`
+    : `<div class="empty-state">${t('no_operatives_match')}</div>`;
 }
+document.getElementById('standings-search').addEventListener('input', renderGuildStandings);
 
 /* ---------- operations log ---------- */
 function renderOperation(){
